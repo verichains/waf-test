@@ -1,0 +1,8 @@
+#!env node
+
+const { WafTest } = require("../dist/modules/waf-test.js");
+
+(async () => {
+    let wafTest = new WafTest();
+    await wafTest.run();
+})();

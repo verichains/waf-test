@@ -1,0 +1,9 @@
+node_modules
+outputs
+.idea
+outputs
+dev.ts
+main.ts
+modules
+.gitignore
+*.ts
