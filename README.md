@@ -47,8 +47,8 @@ import { WafTest } from "waf-test";
 Create testcases folder and add testcase files. Ex: example_testcases/google.ts
 
 ```ts
-import { PrintSummary, SequenceTest, TestCase } from "../modules/sequence";
-import { Logger } from "../modules/logger";
+import { PrintSummary, SequenceTest, TestCase } from "waf-test";
+import { Logger } from "waf-test";
 
 export default class Google extends SequenceTest {
   async run() {
