@@ -41,39 +41,41 @@ export class SequenceTest {
 
     registerEventListener() {
         this.page.on('response', async (res: Response) => {
-            let isBlock = false;
+            let result: Expect = "PASS";
+            let status = res.status();
+            let url = res.url();
 
             // ignore other domains
-            let domain = (new URL(res.url())).host;
+            let domain = (new URL(url)).host;
             if (this.filterDomain && !domain.endsWith(this.filterDomain))
                 return;
 
             let req = await res.request();
-            this._argv.verbose >= 1 && console.log(req.method(), res.url(), res.status());
+            this._argv.verbose >= 1 && console.log(req.method(), url, status);
 
-            if (res.status() === 403) {
+
+            if (status === 403) {
                 // blocked by polaris
-                isBlock = true;
-                this.emit(BLOCK_EVENT, res.url());
+                Logger.red(`[x] Blocked in url ${url}`);
+                result = "BLOCK";
+            }
+            else if (status >= 400 && status !== 404) {
+                Logger.red(`[x] Error in url ${url}`);
+                result = "ERROR";
             }
 
             this.testCaseWriter.appendData({
                 url: res.url(),
                 body: req.postData(),
                 status: res.status(),
-                expect: "PASS",
-                result: isBlock ? "FAILED" : "SUCCESS"
+                result: result
             });
         });
 
         this.eventEmitter = new EventEmitter();
 
-        this.on(ERROR_EVENT, (testCase, ...args) => {
-            Logger.red(`[x] Test case ${testCase} ${args.join(" ")} failed`);
-        });
-
-        this.on(BLOCK_EVENT, url => {
-            Logger.red(`[x] Blocked in url ${url}`);
+        this.on(ERROR_EVENT, async (testCase, errorMsg) => {
+            await this.testCaseWriter.commit(errorMsg);
         });
 
         this.on(NEW_TESTCASE, async (testCase, expect, ...params) => {
@@ -121,7 +123,7 @@ export function TestCase(testName: string, expect: Expect = "PASS") {
             catch (err) {
                 Logger.red("[x] Error in TestCase: " + testName, ...args);
                 this._argv.verbose >= 1 && Logger.red(err);
-                this.emit(ERROR_EVENT, testName);
+                this.emit(ERROR_EVENT, testName, err);
             }
         }
     }

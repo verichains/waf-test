@@ -1,4 +1,4 @@
-import { Browser, Page, DirectNavigationOptions, Response } from "puppeteer";
+import {Browser, Page, DirectNavigationOptions, Response} from "puppeteer";
 import * as Cookie from "cookie";
 import puppeteer from "puppeteer-extra";
 import path from "path";
@@ -66,7 +66,7 @@ export class Chrome {
             });
             document.querySelector(submitSelector).click();
 
-        }, inputs as any, submitSelector);
+        }, inputs as any[], submitSelector);
     }
 
     async clearSiteData() {
@@ -140,18 +140,23 @@ export class Chrome {
         return await this.page.$$(selector);
     }
 
-    async findElementContainText(selector: string, searchString: string) {
-        await this.page.waitForSelector(selector);
-
-        let elements = await this.page.$$(selector);
-        for (let ele of elements) {
-            let textContent = await ele.evaluate(e => { return e.textContent });
-            if (textContent.toLowerCase().includes(searchString.toLowerCase())) {
-                return ele;
+    async findElementContainText(selector: string, searchString: string, timeout = 15000) {
+        let waitTime = 0;
+        while (waitTime < timeout) {
+            let elements = await this.$$(selector);
+            for (let ele of elements) {
+                let textContent = await ele.evaluate(e => { return e.textContent });
+                if (textContent.toLowerCase().includes(searchString.toLowerCase())) {
+                    return ele;
+                }
             }
+
+            await this.page.waitFor(1000);
+            waitTime += 1000;
+            this._argv.verbose >= 2 && console.log('debug', waitTime);
         }
 
-        return null;
+        throw "Error in Chrome.findElementContainText: timeout";
     }
 
     async getElementProperty(selector: string, propertyName: string) {
@@ -180,6 +185,12 @@ export class Chrome {
             await this.page.waitFor(3000);
         }
         while (scroll > oldScroll);
+    }
+
+    async getPageHtml() {
+        return await this.page.evaluate(() => {
+            return document.body.innerHTML;
+        });
     }
 }
 
