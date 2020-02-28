@@ -1,9 +1,9 @@
 import * as utils from "./utils";
+import {ISummaryInfo, ITestCaseWriter, Result, TestCaseData} from "./sequence";
 
-export class SequenceTestWriter {
+export class SequenceTestWriter implements ITestCaseWriter {
 
     protected filePath: string;
-    protected currentTest: ITestCase;
     protected numTest = 0;
     protected numTestPass = 0;
     protected date: Date;
@@ -18,13 +18,9 @@ export class SequenceTestWriter {
         {id: 'message', title: 'Message'}
     ];
 
-    constructor(filePath) {
+    constructor(filePath: string) {
         this.filePath = filePath;
         this.date = new Date();
-    }
-
-    public getCurrentTest() {
-        return this.currentTest;
     }
 
     public getSummaryInfo(): ISummaryInfo {
@@ -36,77 +32,31 @@ export class SequenceTestWriter {
         }
     }
 
-    public async newTestCase(description: string, expect: Expect = "PASS") {
-        if (this.currentTest) {
-            await this.commit();
-        }
-
-        this.currentTest = {
-            description,
-            data: [],
-            expect,
-            result: "FAILED",
-            message: ""
-        };
+    public async addTestCase(data: TestCaseData) {
+        let result: Result = data.responses.every(i => i.result === data.expect) ? "SUCCESS": "FAILED";
+        if (data.error) result = "FAILED";
 
         this.numTest++;
-    }
-
-    public appendData(data: ITestCaseData) {
-        if (this.currentTest) {
-            this.currentTest.data.push(data);
-        }
-    }
-
-    public async commit(error = "") {
-        if (!this.currentTest) {
-            return;
-        }
-
-        let result: Result = this.currentTest.data.every(i => i.result === this.currentTest.expect)? "SUCCESS": "FAILED";
-        if (error) result = "FAILED";
-
         if (result === "SUCCESS") this.numTestPass++;
 
         await utils.appendCSV(this.filePath, this.headers, {
-            description: this.currentTest.description,
-            expect: this.currentTest.expect,
+            description: data.name + " " + data.params.join(", "),
+            expect: data.expect,
             result,
-            message: error
+            message: data.error
         });
 
+        // write detail info for failed test case
         if (result !== "SUCCESS") {
-            await Promise.all(this.currentTest.data.map(item => {
-                return utils.appendCSV(this.filePath, this.headers, item);
+            await Promise.all(data.responses.map(item => {
+                return utils.appendCSV(this.filePath, this.headers, {
+                    url: item.url,
+                    body: item.body,
+                    status: item.status,
+                    expect: data.expect,
+                    result: item.result
+                });
             }));
         }
-
-        this.currentTest = null;
     }
-
-}
-
-export type Expect = "BLOCK" | "PASS" | "ERROR";
-export type Result = "FAILED" | "SUCCESS";
-
-export interface ITestCase {
-    description: string;
-    data: ITestCaseData[];
-    expect: Expect;
-    result: Result;
-    message: string;
-}
-
-export interface ITestCaseData {
-    url?: string;
-    body?: string;
-    status?: number;
-    result?: Expect;
-}
-
-export interface ISummaryInfo {
-    totalTest: number;
-    numPassTest: number;
-    numFailTest: number;
-    date: Date;
 }

@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/types/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist; tsc"
+    "build": "rm -rf dist; tsc",
+    "test": "ts-node main.ts -t ./example_testcases/* -v"
   },
   "bin": {
     "waf-test": "./bin/waf-test"
@@ -28,6 +29,8 @@
     "@types/cookie": "^0.3.3",
     "@types/psl": "^1.1.0",
     "@types/puppeteer": "^2.0.0",
-    "@types/yargs": "^15.0.3"
+    "@types/yargs": "^15.0.3",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.8.2"
   }
 }

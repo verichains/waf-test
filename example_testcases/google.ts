@@ -1,4 +1,4 @@
-import {PrintSummary, SequenceTest, TestCase} from "../modules/sequence";
+import {SequenceTest, TestCase} from "../modules/sequence";
 import {Logger} from "../modules/logger";
 
 export default class Google extends SequenceTest {
@@ -10,7 +10,11 @@ export default class Google extends SequenceTest {
         await this.goToHome();
         let results = await this.search("corona");
 
-        Logger.green(results);
+        Logger.green("Search result: ");
+        results.forEach(item => {
+            Logger.green(item);
+        });
+        this.printSummary();
     }
 
     @TestCase("Go to home page")

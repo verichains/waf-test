@@ -1,34 +1,60 @@
 import { Page, Response } from "puppeteer";
 import * as utils from "./utils";
-import path from "path";
+import * as path from "path";
 import { WafTest } from "./waf-test";
 import { Chrome } from "./chrome";
-import EventEmitter from "events";
-import {Logger} from "./logger";
-import {Expect, SequenceTestWriter} from "./sequenceTestWriter";
+import { Logger } from "./logger";
+import { SequenceTestWriter } from "./sequenceTestWriter";
 
-export const BLOCK_EVENT = "block";
-export const ERROR_EVENT = "error";
-export const NEW_TESTCASE = "new_testcase";
+export type Status = "BLOCK" | "PASS" | "ERROR";
+export type Result = "FAILED" | "SUCCESS";
+
+export interface IResponse {
+    url: string;
+    body: string;
+    status: number;
+    result: Status;
+}
+
+export class TestCaseData {
+    
+    name: string;
+    params: string[];
+    responses: IResponse[] = [];
+    expect: Status;
+    error: any;
+    
+    constructor(name: string, expect: Status = "PASS", params = []) {
+        this.name = name;
+        this.expect = expect;
+        this.params = params;
+    }
+}
+
+export interface ISummaryInfo {
+    totalTest: number;
+    numPassTest: number;
+    numFailTest: number;
+    date: Date;
+}
+
+export interface ITestCaseWriter {
+
+    addTestCase(data: TestCaseData): Promise<any>;
+
+    getSummaryInfo(): ISummaryInfo;
+
+}
 
 export class SequenceTest {
 
     page: Page;
     outputPath: string;
     outputFile: string;
+
     protected filterDomain: string;
-    protected testCaseWriter: SequenceTestWriter;
-
-    protected headers = [
-        {id: 'description', title: 'Description'},
-        {id: 'url', title: 'Url'},
-        {id: 'body', title: 'Body'},
-        {id: 'status', title: 'Status'},
-        {id: 'expect', title: 'Expect'},
-        {id: 'result', title: 'Result'}
-    ];
-
-    protected eventEmitter: EventEmitter;
+    protected testCaseWriter: ITestCaseWriter;
+    protected currentTestCase: TestCaseData;
 
     constructor(protected chrome: Chrome, protected _argv: WafTest.ISequenceConfig) {
         const { output } = this._argv;
@@ -39,9 +65,19 @@ export class SequenceTest {
         this.page = chrome.page;
     }
 
+    printSummary() {
+        let summaryInfo = this.testCaseWriter.getSummaryInfo();
+        console.log();
+        Logger.yellow("[i] Summary Information");
+        for (let key in summaryInfo) {
+            Logger.yellow(`${key}: ${summaryInfo[key]}`);
+        }
+        console.log();
+    }
+
     registerEventListener() {
         this.page.on('response', async (res: Response) => {
-            let result: Expect = "PASS";
+            let result: Status = "PASS";
             let status = res.status();
             let url = res.url();
 
@@ -63,28 +99,14 @@ export class SequenceTest {
                 Logger.red(`[x] Error in url ${url}`);
                 result = "ERROR";
             }
-
-            this.testCaseWriter.appendData({
+            
+            this.currentTestCase.responses.push({
                 url: res.url(),
                 body: req.postData(),
                 status: res.status(),
                 result: result
             });
         });
-
-        this.eventEmitter = new EventEmitter();
-
-        this.on(ERROR_EVENT, async (testCase, errorMsg) => {
-            await this.testCaseWriter.commit(errorMsg);
-        });
-
-        this.on(NEW_TESTCASE, async (testCase, expect, ...params) => {
-            await this.onNewTestCase(testCase, expect, ...params);
-        });
-    }
-
-    async onNewTestCase(testCase, expect, ...params) {
-        await this.testCaseWriter.newTestCase(testCase + " " + params.join(" "), expect);
     }
 
     public setFilterDomain(domain: string) {
@@ -100,41 +122,30 @@ export class SequenceTest {
         await utils.createFolderIfNotExist(this.outputPath);
         await utils.removeFileIfExists(this.outputFile);
     }
-
-    public emit(eventName: string, ...args) {
-        this.eventEmitter.emit(eventName, ...args);
-    }
-
-    public on(eventName: string, handler) {
-        this.eventEmitter.on(eventName, handler);
-    }
 }
 
 // method decorator
-export function TestCase(testName: string, expect: Expect = "PASS") {
+export function TestCase(testName: string, expect: Status = "PASS") {
     return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
         let originalMethod: Function = descriptor.value;
         descriptor.value = async function (...args) {
             Logger.green("[+] TestCase: " + testName, ...args);
-            this.emit(NEW_TESTCASE, testName, expect, ...args);
+
+            this.currentTestCase = new TestCaseData(testName, expect, args);
+
+            let result;
             try {
-                return await originalMethod.apply(this, args);
+                result = await originalMethod.apply(this, args);
             }
             catch (err) {
                 Logger.red("[x] Error in TestCase: " + testName, ...args);
                 this._argv.verbose >= 1 && Logger.red(err);
-                this.emit(ERROR_EVENT, testName, err);
-            }
-        }
-    }
-}
 
-export function PrintSummary() {
-    return function (target, propertyKey: string, descriptor: PropertyDescriptor) {
-        let originalMethod: Function = descriptor.value;
-        descriptor.value = async function (...args) {
-            await originalMethod.apply(this, args);
-            Logger.yellow(JSON.stringify(this.testCaseWriter.getSummaryInfo()));
+                this.currentTestCase.error = err;
+            }
+
+            await this.testCaseWriter.addTestCase(this.currentTestCase);
+            return result;
         }
     }
 }
