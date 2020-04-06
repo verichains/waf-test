@@ -1,9 +1,9 @@
 node_modules
-outputs
+./outputs
 .idea
-outputs
-dev.ts
-main.ts
-modules
-.gitignore
-*.ts
+./outputs
+./dev.ts
+./main.ts
+./modules
+./.gitignore
+./*.ts
