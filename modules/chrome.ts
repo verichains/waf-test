@@ -73,6 +73,9 @@ export class Chrome {
         const client = await this.page.target().createCDPSession();
         await client.send('Network.clearBrowserCookies');
         await client.send('Network.clearBrowserCache');
+        await this.page.evaluate(() => {
+           localStorage.clear();
+        });
     }
 
     async goTo(url: string, options?: DirectNavigationOptions): Promise<Response> {
