@@ -116,6 +116,7 @@ export class Chrome {
             });
         }
         else if (!Array.isArray(_cookies)) cookies = [_cookies];
+        else cookies = _cookies;
 
         await Promise.all(cookies.map(i => {
             return this.page.setCookie({
