@@ -1,4 +1,4 @@
-import {Page, Response} from "puppeteer";
+import {Response} from "puppeteer";
 import * as utils from "./utils";
 import * as path from "path";
 import {WafTest} from "./waf-test";
@@ -57,11 +57,11 @@ export class SequenceTest {
   constructor(protected chrome: Chrome, protected _argv: WafTest.ISequenceConfig) {
   }
 
-  get page(){
+  get page() {
     return this.chrome.page;
   }
 
-  set page(value){
+  set page(value) {
     this.chrome.page.removeAllListeners();
     this.chrome.page = value;
     this.registerEventListener();
@@ -144,7 +144,9 @@ export function TestCase(testName: string, expect: Status = "PASS") {
         result = await originalMethod.apply(this, args);
       } catch (err) {
         Logger.red("[x] Error in TestCase: " + testName, ...args);
-        this._argv.verbose >= 1 && Logger.red(err);
+        console.log('vztlog (sequence.ts:value) verbose level ', this._argv.verbose);
+
+        this._argv.verbose >= 1 && console.trace(err);
 
         this.currentTestCase.error = err;
       }

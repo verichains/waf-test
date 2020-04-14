@@ -144,7 +144,7 @@ export class Chrome {
     return await this.page.$$(selector);
   }
 
-  async findElementContainText(selector: string, searchString: string, timeout = 15000) {
+  async findElementContainText(selector: string, searchString: string, timeout = 15000, exact: boolean = false) {
     let waitTime = 0;
     while (waitTime < timeout) {
       let elements = await this.$$(selector);
@@ -152,8 +152,14 @@ export class Chrome {
         let textContent = await ele.evaluate(e => {
           return e.textContent
         });
-        if (textContent.toLowerCase().includes(searchString.toLowerCase())) {
-          return ele;
+        if (exact) {
+          if (textContent.toLowerCase().trim() === searchString.toLowerCase().trim()) {
+            return ele;
+          }
+        } else {
+          if (textContent.toLowerCase().includes(searchString.toLowerCase())) {
+            return ele;
+          }
         }
       }
 
