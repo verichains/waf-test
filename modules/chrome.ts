@@ -3,7 +3,7 @@ import * as Cookie from "cookie";
 import puppeteer from "puppeteer-extra";
 import path from "path";
 import * as utils from "../modules/utils";
-
+const useProxy = require('puppeteer-page-proxy');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 
@@ -81,6 +81,11 @@ export class Chrome {
   async goTo(url: string, options?: DirectNavigationOptions): Promise<Response> {
     let response = await this.page.goto(url, options);
     if (response) return response;
+  }
+
+  async useProxy(host: string, port: string = '80', auth: string = ''){
+    const proxy = `http://${auth ? auth + '@' : ''}${host}:${port}`;
+    await useProxy(this.page , proxy);
   }
 
   async click(selector: string) {
