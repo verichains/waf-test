@@ -1,11 +1,18 @@
-import {Browser, DirectNavigationOptions, ElementHandle, Page, Response} from "puppeteer";
+import {Browser, DirectNavigationOptions, ElementHandle, Page, Permission, Response} from "puppeteer";
 import * as Cookie from "cookie";
 import puppeteer from "puppeteer-extra";
 import path from "path";
 import * as utils from "../modules/utils";
+
 const useProxy = require('puppeteer-page-proxy');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
+
+export interface IProxyConfig {
+  host: string;
+  port: string | number;
+  auth?: string;
+}
 
 export class Chrome {
 
@@ -57,6 +64,11 @@ export class Chrome {
     return this.page;
   }
 
+  async grantPermission(url: string, permission: Permission[]) {
+    const context = this.browser.defaultBrowserContext();
+    await context.overridePermissions(url, permission);
+  }
+
   async submit(inputs: Chrome.ISubmitInput[], submitSelector: string) {
     await Promise.all(inputs.map(item => this.page.waitForSelector(item.selector)));
 
@@ -83,9 +95,10 @@ export class Chrome {
     if (response) return response;
   }
 
-  async useProxy(host: string, port: string = '80', auth: string = ''){
+  async useProxy(config: IProxyConfig) {
+    const {host, port = 80, auth} = config;
     const proxy = `http://${auth ? auth + '@' : ''}${host}:${port}`;
-    await useProxy(this.page , proxy);
+    await useProxy(this.page, proxy);
   }
 
   async click(selector: string) {
@@ -176,16 +189,16 @@ export class Chrome {
     throw "Error in Chrome.findElementContainText: timeout";
   }
 
-  async getElementProperty(selector: string, propertyName: string) {
+  async getElementProperty(selector: string, propertyName: string): Promise<any> {
     return await this.$(selector)
-        .then(value => value.getProperty(propertyName))
-        .then(value => value.jsonValue());
+      .then(value => value.getProperty(propertyName))
+      .then(value => value.jsonValue());
   }
 
   async getElementProperties(selector: string, propertyName: string): Promise<any[]> {
     return await this.$$(selector)
-        .then(values => Promise.all(values.map(i => i.getProperty(propertyName))))
-        .then(values => Promise.all(values.map(i => i.jsonValue())));
+      .then(values => Promise.all(values.map(i => i.getProperty(propertyName))))
+      .then(values => Promise.all(values.map(i => i.jsonValue())));
   }
 
   async scrollToEnd() {
