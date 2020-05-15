@@ -64,6 +64,20 @@ export class Chrome {
     return this.page;
   }
 
+  async getCurrentIP() {
+    let newTab = await this.browser.newPage();
+
+    try {
+      await newTab.goto('https://ifconfig.co/ip');
+      return await newTab.evaluate(e => document.body.innerText);
+    } catch (e) {
+      await newTab.goto('https://whatismyipaddress.com/');
+      return await this.$('#ipv4>a').then(s => s.evaluate(e => e.textContent.trim()));
+    } finally {
+      await newTab.close();
+    }
+  }
+
   async grantPermission(url: string, permission: Permission[]) {
     const context = this.browser.defaultBrowserContext();
     await context.overridePermissions(url, permission);
@@ -81,11 +95,11 @@ export class Chrome {
     }, inputs as any[], submitSelector);
   }
 
-  async clearSiteData() {
-    const client = await this.page.target().createCDPSession();
+  async clearSiteData(page: Page = this.page) {
+    const client = await page.target().createCDPSession();
     await client.send('Network.clearBrowserCookies');
     await client.send('Network.clearBrowserCache');
-    await this.page.evaluate(() => {
+    await page.evaluate(() => {
       localStorage.clear();
     });
   }
@@ -186,7 +200,7 @@ export class Chrome {
       this._argv.verbose >= 2 && console.log('debug', waitTime);
     }
 
-    throw "Error in Chrome.findElementContainText: timeout";
+    throw `Error in Chrome.findElementContainText: timeout! "${selector}" not found`;
   }
 
   async getElementProperty(selector: string, propertyName: string): Promise<any> {
