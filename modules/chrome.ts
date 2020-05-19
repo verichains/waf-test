@@ -18,6 +18,7 @@ export class Chrome {
 
   public browser: Browser;
   public page: Page;
+  public previousPage: Page;
   public screenShotPath: string;
 
   constructor(private _argv?: Chrome.IConfig) {
@@ -55,14 +56,24 @@ export class Chrome {
     await this.browser.close();
   }
 
-  async newPage(): Promise<Page> {
-    if (this.page && !this.page.isClosed()) {
+  async newPage(replace: boolean = false): Promise<Page> {
+    if (this.page && !this.page.isClosed() && replace) {
       await this.page.close();
     }
+    this.previousPage = this.page;
     this.page = await this.browser.newPage();
 
     return this.page;
   }
+
+  async backToPreviousPage() {
+    if (this.previousPage && !this.previousPage.isClosed()) {
+      !this.page.isClosed() && await this.page.close();
+      this.page = this.previousPage;
+      this.previousPage = null;
+    }
+  }
+
 
   async getCurrentIP() {
     let newTab = await this.browser.newPage();

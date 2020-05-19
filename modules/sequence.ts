@@ -123,7 +123,7 @@ export class SequenceTest {
     Logger.yellow("[+] Begin test " + this.constructor.name);
 
     // open new page
-    this.page = await this.chrome.newPage();
+    this.page = await this.chrome.newPage(true);
     this.registerEventListener();
     await utils.createFolderIfNotExist(this.outputPath);
     await utils.removeFileIfExists(this.outputFile);
