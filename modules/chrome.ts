@@ -66,6 +66,13 @@ export class Chrome {
     return this.page;
   }
 
+  async clonePage(): Promise<Page> {
+    const url = await this.page.url();
+    const page = await this.newPage();
+    await page.goto(url);
+    return page;
+  }
+
   async backToPreviousPage() {
     if (this.previousPage && !this.previousPage.isClosed()) {
       !this.page.isClosed() && await this.page.close();
