@@ -221,6 +221,10 @@ export class Chrome {
     throw `Error in Chrome.findElementContainText: timeout! "${selector}" not found`;
   }
 
+  async waitForScopedSelector(selector, scopeElement) {
+    return this.page.waitForFunction((selector, scopeElement) => scopeElement.querySelector(selector), {}, selector, scopeElement);
+  }
+
   async getElementProperty(selector: string, propertyName: string): Promise<any> {
     return await this.$(selector)
       .then(value => value.getProperty(propertyName))
