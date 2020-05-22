@@ -263,6 +263,12 @@ export class Chrome {
     await this.page.keyboard.up(control);
     await this.page.keyboard.press('Backspace');
   }
+
+  async replaceText(element: ElementHandle, text: string) {
+    await this.deleteText(element);
+    await element.type(text);
+    return element;
+  }
 }
 
 export namespace Chrome {
