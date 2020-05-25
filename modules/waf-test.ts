@@ -64,8 +64,6 @@ export class WafTest {
     argv.logAllRequests = argv["log-all-requests"];
     argv.command = argv._;
 
-    console.log('vztlog (waf-test.ts:parseCommand) argb ', argv);
-
     return argv;
   }
 
