@@ -5,7 +5,7 @@ import * as csvWriter from "csv-writer";
 
 export function createFolderIfNotExist(folder: string) {
     if (!fs.existsSync(folder)) {
-        fs.mkdirSync(folder);
+        fs.mkdirSync(folder, { recursive: true });
     }
 }
 

@@ -46,6 +46,10 @@ export interface ITestCaseWriter {
 
 }
 
+interface ISequenceOption {
+  logAllRequest?: boolean;
+}
+
 export class SequenceTest {
   outputPath: string;
   outputFile: string;
@@ -53,6 +57,8 @@ export class SequenceTest {
   protected filterDomain: string;
   protected testCaseWriter: ITestCaseWriter;
   protected currentTestCase: TestCaseData;
+
+  logAllRequest: boolean = true;
 
   constructor(protected chrome: Chrome, protected _argv: WafTest.ISequenceConfig) {
   }
@@ -78,6 +84,10 @@ export class SequenceTest {
   }
 
   registerEventListener() {
+    const {logAllRequests} = this._argv;
+    if (!logAllRequests) {
+      return;
+    }
     this.page.on('response', async (res: Response) => {
       let result: Status = "PASS";
       let status = res.status();
@@ -118,13 +128,15 @@ export class SequenceTest {
     const {output} = this._argv;
     this.outputPath = utils.getAbsolutePath(output);
     this.outputFile = path.join(this.outputPath, this.constructor.name + '.csv');
+    console.log('vztlog (sequence.ts:run) out ', this.outputFile);
     this.testCaseWriter = new SequenceTestWriter(this.outputFile);
 
     Logger.yellow("[+] Begin test " + this.constructor.name);
 
     // open new page
-    this.page = await this.chrome.newPage(true);
+    this.page = await this.chrome.newPage();
     this.registerEventListener();
+
     await utils.createFolderIfNotExist(this.outputPath);
     await utils.removeFileIfExists(this.outputFile);
   }
