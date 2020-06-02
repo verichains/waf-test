@@ -212,6 +212,8 @@ export class Chrome {
       await this.page.waitFor(1000);
       waitTime += 1000;
     }
+
+    throw `Error in Chrome.findElementsHasText: timeout! "${selector} | ${searchString}" not found`;
   }
 
   async findElementHasText(selector: string, searchString: string, option?: IFindOption) {
