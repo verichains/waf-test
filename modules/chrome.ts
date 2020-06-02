@@ -14,6 +14,12 @@ export interface IProxyConfig {
   auth?: string;
 }
 
+export interface IFindOption {
+  timeout?: number;
+  exact?: boolean;
+  parent?: ElementHandle;
+}
+
 export class Chrome {
 
   public browser: Browser;
@@ -185,13 +191,32 @@ export class Chrome {
   }
 
   async $(selector: string) {
-    await this.page.waitForSelector(selector);
-    return await this.page.$(selector);
+    return await this.page.waitForSelector(selector);
   }
 
   async $$(selector: string) {
     await this.page.waitForSelector(selector);
     return await this.page.$$(selector);
+  }
+
+  async findElementsHasText(selector: string, searchString: string, option?: IFindOption) {
+    const {timeout = 10000, parent} = option || {};
+    const element = parent ? parent : this.page;
+
+    let waitTime = 0;
+    while (waitTime < timeout) {
+      const results = await element.$x(`//${selector}[contains(text(),"${searchString}")]`);
+      if (results && results.length) {
+        return results;
+      }
+      await this.page.waitFor(1000);
+      waitTime += 1000;
+    }
+  }
+
+  async findElementHasText(selector: string, searchString: string, option?: IFindOption) {
+    const elements = await this.findElementsHasText(selector, searchString, option);
+    return elements[0];
   }
 
   async findElementContainText(selector: string, searchString: string, timeout = 15000, exact: boolean = false) {
