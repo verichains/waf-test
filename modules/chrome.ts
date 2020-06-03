@@ -206,7 +206,6 @@ export class Chrome {
     async findElementsHasText(selector: string, searchString: string, option?: IFindOption) {
         const {timeout = 10000, parent} = option || {};
         const element = parent ? parent : this.page;
-
         let waitTime = 0;
         while (waitTime < timeout) {
             const results = await element.$x(`//${selector}[contains(text(),"${searchString}")]`);
@@ -216,7 +215,6 @@ export class Chrome {
             await this.page.waitFor(1000);
             waitTime += 1000;
         }
-
         throw `Error in Chrome.findElementsHasText: timeout! "${selector} | ${searchString}" not found`;
     }
 
@@ -243,12 +241,10 @@ export class Chrome {
                     }
                 }
             }
-
             await this.page.waitFor(1000);
             waitTime += 1000;
             this._argv.verbose >= 2 && console.log('debug', waitTime);
         }
-
         throw `Error in Chrome.findElementContainText: timeout! "${selector}" not found`;
     }
 
